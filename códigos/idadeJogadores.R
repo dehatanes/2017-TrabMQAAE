@@ -1,0 +1,1 @@
+boxplot(atp_matches_2016$winner_age, atp_matches_2016$loser_age, main="Idade dos Jogadores", ylab= "Idade (anos)", names = c("Vencedores", "Perdedores") ,  boxwex = 0.2, varwidth=TRUE, na.rm = TRUE)
