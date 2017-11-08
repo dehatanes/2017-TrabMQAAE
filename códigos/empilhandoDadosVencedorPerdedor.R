@@ -65,3 +65,6 @@ names(l_atributos)[13]<-"p_bpFaced"
 
 #combinado w_atributos com l_atributos
 p_atributos<-rbind(w_atributos, l_atributos)
+
+#embaralha os dados
+p_atributos_sf<-p_atributos[sample(nrow(p_atributos)),]
