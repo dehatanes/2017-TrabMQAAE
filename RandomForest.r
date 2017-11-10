@@ -19,6 +19,7 @@ raw_data = atp_matches_2016
 indices <- apply(raw_data, 1, function(raw_data) all(is.na(raw_data)))
 raw_data = raw_data[!indices, ] # Novo data frame sem as linhas em branco
 
+
 # Retirar linhas com carpete
 raw_data = raw_data[raw_data$surface != 'Carpet', ]
 
@@ -58,7 +59,19 @@ colSums(is.na(warm_data))
 dim(warm_data)
 
 # ----------------------------------------------
-# TRATAMENTO DOS DADOS
+# MANIPULAÇÃO DOS DADOS
+
+# Quantos jogos por superficie
+table(warm_data$surface, warm_data$draw_size)
+
+# Draw Size
+counts <- table(warm_data$draw_size, warm_data$surface)
+barplot(counts, 
+        main="Tamanho da Quadra por Superficie",
+        xlab="Superficie", 
+        ylab='Quantidade',
+        col=c("green","blue","yellow","red","pink"),
+        legend = rownames(counts), beside=FALSE) 
 
 # Tratar score. 
 #Criar coluna com quantidade de sets, quantidade de pontos média por set e se alguém foi retirado da partida.
@@ -98,194 +111,283 @@ for (row in 1:nrow(warm_data)){
   warm_data[row,'qtdPontosMedia'] = as.integer(mediaPontos)
 }
 
-'
-table(warm_data$qtdPontosMedia, warm_data$surface) 
+summary(warm_data$qtdPontosMedia)
 
-d <- density(warm_data$qtdPontosMedia)
-plot(d, main = "Densidade de Pontos feitos por set",xlab = "Pontos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-'
+g <- ggplot(warm_data, aes(x = surface, y = qtdPontosMedia)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade de Pontos", 
+                     breaks = seq(0, 20, 2), limits=c(0, 20)) +
+  ggtitle("Boxplot - Quantidade de Pontos por Set média") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
+
+g <- ggplot(warm_data, aes(x = surface, y = qtdSets)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade de Sets", 
+                     breaks = seq(0, 7, 1), limits=c(0, 7)) +
+  ggtitle("Boxplot - Quantidade de Sets") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
+
+
 # Tratar minutos. Separar por faixas de tempo.
 # Normalizar pela quantidade de sets
 warm_data$minutes = warm_data$minutes / warm_data$qtdSets
 # Separar em faixas de tempo de 10 em 10 min e depois multiplicando por 5 pra distanciar
-warm_data$minutes = as.integer(warm_data$minutes / 2) * 2
-'
-# Observar resultados do tratamento
-table(warm_data$minutes, warm_data$surface)
-# Observar resultados do tratamento
-d <- density(warm_data[warm_data$surface == "Clay",]$minutes)
-d <- density(warm_data[warm_data$surface == "Hard",]$minutes)
-d <- density(warm_data[warm_data$surface == "Grass",]$minutes)
 
-plot(d, main = "Densidade de Tempo de Partida",xlab = "Tempo (min)", ylab = "Densidade")
-polygon(d, col = "GREEN", border = "BLUE")
-'
+# Observar resultados do tratamento
+summary(warm_data$minutes, warm_data$surface)
+
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = minutes)) + 
+     geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+     scale_x_discrete(name = "Superficie") +
+     scale_y_continuous(name = "Tempo (minutos)", 
+                        breaks = seq(0, 175, 5), limits=c(0, 175)) +
+     ggtitle("Boxplot - Tempo Medio da Partida por Superficie") +
+     theme(panel.border = element_blank(),
+           panel.grid.major = element_line(colour = "#d3d3d3"),
+           panel.grid.minor = element_blank(),
+           plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+           text=element_text(family = "Tahoma"),
+           axis.line = element_line(size=0.5, colour = "black"),
+           axis.text.x = element_text(colour="black", size = 11),
+           axis.text.y = element_text(colour="black", size = 9))
+# Ignora Outliers
+limitesY = boxplot.stats(warm_data$minutes)$stats[c(1, 5)]
+g.zoom = g + coord_cartesian(ylim = limitesY*1.05)
+g.zoom
+
 # Tratar aces. 
 # Transformar em uma variável quantidade de aces na partida. Separar em faixas.
 warm_data$qtdAces = (warm_data$w_ace + warm_data$l_ace) / warm_data$qtdSets
-warm_data$qtdAces = as.integer(warm_data$qtdAces / 1)
-'
+
 summary(warm_data$qtdAces) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdAces)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdAces)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdAces)
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdAces)) + 
+     geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+     scale_x_discrete(name = "Superficie") +
+     scale_y_continuous(name = "Quantidade Media de Aces por Set", 
+                        breaks = seq(0, 24, 2), limits=c(0, 24)) +
+     ggtitle("Boxplot - Quantidade de Aces por Superficie") +
+     theme(panel.border = element_blank(),
+           panel.grid.major = element_line(colour = "#d3d3d3"),
+           panel.grid.minor = element_blank(),
+           plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+           text=element_text(family = "Tahoma"),
+           axis.line = element_line(size=0.5, colour = "black"),
+           axis.text.x = element_text(colour="black", size = 11),
+           axis.text.y = element_text(colour="black", size = 9))
+g
 
-plot(d, main = "Densidade de Qtd. Aces",xlab = "Qtd. Aces", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdAces)
-table(warm_data$qtdAces, warm_data$surface) 
-'
 # Tratar Double Faults.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdDoubleFaults = (warm_data$w_df + warm_data$l_df) / warm_data$qtdSets
-warm_data$qtdDoubleFaults = as.integer(warm_data$qtdDoubleFaults / 1) 
-'
+
 summary(warm_data$qtdDoubleFaults) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdDoubleFaults)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdDoubleFaults)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdDoubleFaults)
-
-plot(d, main = "Densidade de Qtd de Double Faults por set",xlab = "Qtd Double Faults", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdDoubleFaults)
-table(warm_data$qtdDoubleFaults, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdDoubleFaults)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de Double Faults por Set", 
+                     breaks = seq(0, 10, 1), limits=c(0, 10)) +
+  ggtitle("Boxplot - Quantidade de Double Faults por Superficie") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar Pontos Vencido.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdPontosVencidos = (warm_data$w_svpt + warm_data$l_svpt) / warm_data$qtdSets
-warm_data$qtdPontosVencidos = as.integer(warm_data$qtdPontosVencidos / 5) * 5
-'
+
 summary(warm_data$qtdPontosVencidos) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdPontosVencidos)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdPontosVencidos)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdPontosVencidos)
-
-plot(d, main = "Densidade de Qtd de Pontos Vencidos por set",xlab = "Qtd Pontos Vencidos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdPontosVencidos)
-table(warm_data$qtdPontosVencidos, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdPontosVencidos)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de Pontos Vencidos por Set", 
+                     breaks = seq(0, 102, 10), limits=c(0, 102)) +
+  ggtitle("Boxplot - Quantidade de Pontos Vencidos por Superficie") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar Acertos no 1º saque.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdAcertos1Saque = (warm_data$w_1stIn + warm_data$l_1stIn) / warm_data$qtdSets
-warm_data$qtdAcertos1Saque = as.integer(warm_data$qtdAcertos1Saque / 2) * 2
-'
+
 summary(warm_data$qtdAcertos1Saque) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdAcertos1Saque)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdAcertos1Saque)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdAcertos1Saque)
-
-plot(d, main = "Densidade de Qtd. Acertos no 1º saque",xlab = "Acertos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdAcertos1Saque)
-table(warm_data$qtdAcertos1Saque, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdAcertos1Saque)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de Acertos 1º Saque", 
+                     breaks = seq(0, 68, 5), limits=c(0, 68)) +
+  ggtitle("Boxplot - Quantidade de Acertos no 1º Saque") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar Pontos Ganhos no 1º saque.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdGanhos1Saque = (warm_data$w_1stWon + warm_data$l_1stWon) / warm_data$qtdSets
-warm_data$qtdGanhos1Saque = as.integer(warm_data$qtdGanhos1Saque / 2)
-'
+
 summary(warm_data$qtdGanhos1Saque) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdGanhos1Saque)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdGanhos1Saque)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdGanhos1Saque)
-
-plot(d, main = "Densidade Pontos Ganhos 1º saque",xlab = "Pontos Ganhos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdGanhos1Saque)
-table(warm_data$qtdGanhos1Saque, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdGanhos1Saque)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de PG no 1º Saque", 
+                     breaks = seq(0, 53, 5), limits=c(0, 53)) +
+  ggtitle("Boxplot - Quantidade de Pontos Ganhos no 1º Saque") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar Pontos Ganhos no 2º saque. # DESCARTADA
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdGanhos2Saque = (warm_data$w_2ndWon + warm_data$l_2ndWon) / warm_data$qtdSets
-warm_data$qtdGanhos2Saque = as.integer(warm_data$qtdGanhos2Saque / 1)
-'
+
 summary(warm_data$qtdGanhos2Saque) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdGanhos2Saque)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdGanhos2Saque)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdGanhos2Saque)
-
-plot(d, main = "Densidade Pontos Ganhos 2º saque",xlab = "Pontos Ganhos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdGanhos2Saque)
-table(warm_data$qtdGanhos2Saque, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdGanhos2Saque)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de PG no 2º Saque", 
+                     breaks = seq(0, 30, 5), limits=c(0, 30)) +
+  ggtitle("Boxplot - Quantidade de Pontos Ganhos no 2º Saque") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar quantidade de Games de Saque. 
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qdGamesSaque = (warm_data$w_SvGms + warm_data$l_SvGms) / warm_data$qtdSets
-warm_data$qdGamesSaque = as.integer(warm_data$qdGamesSaque / 1)
-'
+
 summary(warm_data$qdGamesSaque) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qdGamesSaque)
-d <- density(warm_data[warm_data$surface == "Hard",]$qdGamesSaque)
-d <- density(warm_data[warm_data$surface == "Grass",]$qdGamesSaque)
-
-plot(d, main = "Densidade Qtd Games de Saque",xlab = "Games de Saque", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qdGamesSaque)
-table(warm_data$qdGamesSaque, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qdGamesSaque)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de GS", 
+                     breaks = seq(0, 17, 2), limits=c(0, 17)) +
+  ggtitle("Boxplot - Quantidade de Games de Saque") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar quantidade de Pontos Salvos.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qdPontosSalvos = (warm_data$w_bpSaved + warm_data$l_bpSaved) / warm_data$qtdSets
-warm_data$qdPontosSalvos = as.integer(warm_data$qdPontosSalvos / 1) 
-'
+
 summary(warm_data$qdPontosSalvos) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qdPontosSalvos)
-d <- density(warm_data[warm_data$surface == "Hard",]$qdPontosSalvos)
-d <- density(warm_data[warm_data$surface == "Grass",]$qdPontosSalvos)
-
-plot(d, main = "Densidade de Qtd de Pontos Salvos",xlab = "Pontos Salvos", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qdPontosSalvos)
-table(warm_data$qdPontosSalvos, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qdPontosSalvos)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de Pontos Salvos", 
+                     breaks = seq(0, 13, 2), limits=c(0, 13)) +
+  ggtitle("Boxplot - Quantidade de Pontos Salvos por Superficie") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # Tratar quantidade de Break Points Enfrentados.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
 warm_data$qtdBreakPointsEnfr = (warm_data$w_bpFaced + warm_data$l_bpFaced) / warm_data$qtdSets
-warm_data$qtdBreakPointsEnfr = as.integer(warm_data$qtdBreakPointsEnfr / 1)
-'
+
 summary(warm_data$qtdBreakPointsEnfr) 
 
-d <- density(warm_data[warm_data$surface == "Clay",]$qtdBreakPointsEnfr)
-d <- density(warm_data[warm_data$surface == "Hard",]$qtdBreakPointsEnfr)
-d <- density(warm_data[warm_data$surface == "Grass",]$qtdBreakPointsEnfr)
-
-plot(d, main = "Densidade de Qtd de Break Points Enfrentados",xlab = "Break Points Enfrentados", ylab = "Densidade")
-polygon(d, col = "ORANGE", border = "RED")
-
-table(warm_data$qtdBreakPointsEnfr)
-table(warm_data$qtdBreakPointsEnfr, warm_data$surface) 
-'
+# Grafico
+g <- ggplot(warm_data, aes(x = surface, y = qtdBreakPointsEnfr)) + 
+  geom_boxplot(fill = "#4271AE", colour = "#1F3552", alpha = 0.7) +
+  scale_x_discrete(name = "Superficie") +
+  scale_y_continuous(name = "Quantidade Media de BP Enfrentados", 
+                     breaks = seq(0, 15, 2), limits=c(0, 15)) +
+  ggtitle("Boxplot - Quantidade de Break Points Enfrentados") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_line(colour = "#d3d3d3"),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, family = "Tahoma", hjust = 0.5),
+        text=element_text(family = "Tahoma"),
+        axis.line = element_line(size=0.5, colour = "black"),
+        axis.text.x = element_text(colour="black", size = 11),
+        axis.text.y = element_text(colour="black", size = 9))
+g
 
 # -----------------------------------------
 # RANDOM FOREST
 newdata = warm_data
-newdata_clust = warm_data[,c(1:2,4,23:34)]
+
+colunas_interessantes <- c("surface", "draw_size", "minutes", "qtdPontosMedia",  "qtdAces", "qtdGanhos1Saque", "qdPontosSalvos", "l_2ndWon", "qtdBreakPointsEnfr")
+newdata_clust =  subset(newdata, select = colunas_interessantes)
+
 glimpse(newdata_clust)
 
 mask = sample.split(newdata_clust$surface, SplitRatio = 7/10)
@@ -299,7 +401,7 @@ rf.model = ranger(as.factor(surface) ~ ., data=train)
 rf.pred = predict(rf.model,test)
 table(test$surface, rf.pred$predictions)
 
-acuracia = (99 + 8 + 427) / 867
+acuracia = (89 + 13 + 428) / 867
 acuraciaSeFosseChutadoHard = 510 / 867
 
 table(test$surface)
