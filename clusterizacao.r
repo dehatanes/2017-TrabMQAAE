@@ -3,6 +3,7 @@ library(readr)   # Provides a fast way to read retangular data (like csv)
 library(dplyr)   # Helps in data manipulating tasks
 library(sqldf)   # Provides a way to use SQL sentences to search in a data frame
 library(Amelia)  # Provides a way to visualize missing data in a data frame
+library(caTools) # Para fazer split do dataset entre treino e teste
 
 # Set working directory
 setwd("/home/eduardo/Área de Trabalho/") # Colocar caminho onde salvou o banco
@@ -120,6 +121,7 @@ warm_data$qdPontosSalvos = as.integer(warm_data$qdPontosSalvos / 1)
 
 # Tratar quantidade de Break Points Enfrentados.
 # Transformar em uma variável quantidade por partida. Separar em faixas.
+'
 summary(warm_data$w_bpFaced) 
 summary(warm_data$l_bpFaced) 
 summary(warm_data$w_bpFaced - warm_data$l_bpFaced)
@@ -136,17 +138,16 @@ polygon(d, col = "GREEN", border = "BLUE")
 d <- density(warm_data$w_bpFaced + warm_data$l_bpFaced)
 plot(d, main = "Densidade de Tempo de Partida",xlab = "Tempo (min)", ylab = "Densidade")
 polygon(d, col = "GREEN", border = "BLUE")
-
+'
 warm_data$qtdBreakPointsEnfr = warm_data$w_bpFaced + warm_data$l_bpFaced
 warm_data$qtdBreakPointsEnfr = as.integer(warm_data$qtdBreakPointsEnfr / 2) * 2
-
+'
 d <- density(warm_data$qtdBreakPointsEnfr)
 plot(d, main = "Densidade de Tempo de Partida",xlab = "Tempo (min)", ylab = "Densidade")
 polygon(d, col = "ORANGE", border = "RED")
 
 table(warm_data$qtdBreakPointsEnfr, warm_data$surface)
-
-# w_bpFaced l_bpFaced (int)
+'
 
 # ----------------------------------------------
 # APLICAR WARD HIERARQUICAL CLUSTERING NOS DADOS
@@ -170,3 +171,22 @@ newdata_clust$surface = newdata$surface
 
 table(newdata_clust$surface)
 table(newdata_clust$surface, newdata_clust$cluster)
+
+# APLICAR ARVORE PARA TENTAR CLASSIFICAR OS DADOS
+newdata_clust = warm_data[,c(1:2,4,23:31)]
+mask = sample.split(newdata_clust$surface, SplitRatio = 7/10)
+
+train = newdata[mask,]
+test  = newdata[!mask,]
+
+library(randomForest,quietly=TRUE)
+library(ranger,quietly=TRUE)
+set.seed(97)
+rf.model = ranger(as.factor(surface) ~ ., data=train, importance = 'impurity')
+
+rf.pred = predict(rf.model,test)
+table(test$surface, rf.pred$predictions)
+
+(69 + 2 + 461) / (69 + 2 + 461 + 4 + 44 + 2 + 5 + 190 + 90)
+
+table(test$surface)
