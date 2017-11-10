@@ -271,12 +271,15 @@ plot(fit, main="Dendograma", hang = -1, cex = 0.6, ylab = "Altura", xlab = "Clus
 plot(fit, ylim = c(0, 200), hang = -1, cex = 0.6)
 mtext(seq(0, 400, 100), side = 2, at = seq(0, 400, 100), line = 1, 
       col = "#A38630", las = 2)
-zm()
-clusterCut <- cutree(hc, k=4) # desenho em tres pedaco
+rect.hclust(hc, k=4, border="red")
+
+
+
+clusterCut <- cutree(hc, k=4) 
 table(clusterCut, warm_data$surface)
 
 
 
-rect.hclust(hc, k=4, border="red")
+
 
 
