@@ -238,45 +238,25 @@ warm_data = warm_data[!names(warm_data) %in% c("first_diferenca", "second_difere
 library(zoom)
 warm_data <- na.omit(warm_data)
 
-# prepare hierarchical cluster
-hc = hclust(dist(warm_data))
-png(
-  "test.png",
-  width     = 15,
-  height    = 10,
-  units     = "in",
-  res       = 1200,
-  pointsize = 4
-)
-par(
-  mar      = c(5, 5, 2, 2),
-  xaxs     = "i",
-  yaxs     = "i",
-  cex.axis = 2,
-  cex.lab  = 2
-)
+# Calcula o dendagrama com o metodo WARD
+fit <- hclust(dist(warm_data), method="ward.D2") 
 
-plot(hc, lty = 1,  axes = FALSE, hang= -1, main ="Dendograma", cex= 0.8, font=10,
-     ylab = "Altura", xlab = "Clusters")
-axis(side = 2, at = seq(0, 400, 100), col = "#F38630", labels = FALSE, 
-     lwd = 2, las = 2)
-dev.off()
+# Representa graficamente
+plot(fit, main="Dendrograma", hang = -1, cex = 0.6, ylab = "Altura")
 
-                                                      
+# Corta em pedacos
+groups <- cutree(fit, k=4) 
 
-d <- dist(warm_data, method = "euclidean") 
-fit <- hclust(d, method="ward.D") 
-plot(fit) # display dendogram
-plot(fit, main="Dendograma", hang = -1, cex = 0.6, ylab = "Altura", xlab = "Clusters")
-plot(fit, ylim = c(0, 200), hang = -1, cex = 0.6)
-mtext(seq(0, 400, 100), side = 2, at = seq(0, 400, 100), line = 1, 
-      col = "#A38630", las = 2)
-rect.hclust(hc, k=4, border="red")
+# Mostra os pedacos no grafico
+rect.hclust(fit, k=4, border="red")                                                      
+
+
+
 
 
 
 clusterCut <- cutree(hc, k=4) 
-table(clusterCut, warm_data$surface)
+table(groups, warm_data$surface)
 
 
 
